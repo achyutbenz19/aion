@@ -1,2 +1,2 @@
-UPLOAD_FOLDER = './server/archieve'
+UPLOAD_FOLDER = './archive'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}

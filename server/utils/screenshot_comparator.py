@@ -42,11 +42,14 @@ class ScreenshotComparator:
             file.save(file_path)
             return file_path
         return None
-    
-    
-    def take_screenshot(self, save_path):
+
+    def take_screenshot(self, filename=None):
+        if filename is None:
+            filename = f'screenshot_{int(time.time())}.png'
+        save_path = os.path.join(self.archive_folder, filename)
         screenshot = pyautogui.screenshot()
         screenshot.save(save_path)
+        return save_path
 
     def process_upload(self, file):
         current_screenshot_path = self.save_file(file)
