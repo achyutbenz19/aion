@@ -1,5 +1,6 @@
 import os
 from langchain.schema import Document
+from config.index import CLIENT
 
 class FileManager:
     def __init__(self):
