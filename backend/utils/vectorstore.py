@@ -1,17 +1,51 @@
-from langchain_community.vectorstores import SupabaseVectorStore
+import os
+from typing import Optional, List
+from langchain_pinecone import PineconeVectorStore
+from langchain_core.documents.base import Document
+from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
-from config.index import CLIENT
 
 class Vectorstore:
-    def __init__(self):
-        self.client = CLIENT
-        self.embeddings = OpenAIEmbeddings()
-        self.vectorstore = SupabaseVectorStore(self.client, self.embeddings, "aion_table")
-        print("Initalized")
+    def __init__(
+            self,
+            index_name: str = "aion",
+    ) -> None:
+        self.index_name = index_name
+        self.vectorstore: Optional[PineconeVectorStore] = None
+        self.client: Optional[Pinecone] = None
+        self.index = None
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small", disallowed_special=())
+        self.init_vectorstore()
+
+    def init_vectorstore(self) -> None:
+        if self.client and self.vectorstore:
+            return None
+
+        self.client = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+        if self.index_name not in self.client.list_indexes().names():
+            self.client.create_index(
+                name=self.index_name,
+                dimension=len(self.embeddings.embed_query("aion")),
+                spec=ServerlessSpec(
+                    cloud='aws', 
+                    region='us-east-1'
+                )
+            )
         
-    def add(self, docs):
-        self.vectorstore.add_documents(docs)
-        print("Added")
-    
-    def query(self, question):
-        return self.vectorstore.similarity_search(question)
+        self.index = self.client.Index(
+            name=self.index_name,
+            pool_threads=5,
+        )
+        self.vectorstore = PineconeVectorStore(
+            index=self.index,
+            embedding=self.embeddings,
+        )
+
+    def add(self, docs: List[Document]):
+        ids = self.vectorstore.add_documents(docs)
+        print(f"{len(ids) + 1} documents added")
+
+    def query(self, query: str, filter: dict = None):
+        results = self.vectorstore.similarity_search(query=query, filter=filter)
+        return results

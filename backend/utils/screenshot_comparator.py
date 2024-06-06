@@ -51,8 +51,7 @@ class ScreenshotComparator:
         screenshot.save(save_path)
         return save_path
 
-    def process_upload(self, file):
-        current_screenshot_path = self.save_file(file)
+    def process_upload(self, current_screenshot_path):
         if not current_screenshot_path:
             return "Invalid file format", 400
 
