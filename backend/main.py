@@ -12,19 +12,25 @@ vectorstore = Vectorstore()
 vision_llm = VisionLLM()
 
 if __name__ == "__main__":
-    ss_taken = 0
-    while True and ss_taken <= 1:
-        sleep(5)
-        path = screenshot_comparator.take_screenshot()
-        result = screenshot_comparator.process_upload(path)
-        print(result)
+    # ss_taken = 0
+    # while True and ss_taken <= 1:
+    #     sleep(5)
+    #     path = screenshot_comparator.take_screenshot()
+    #     result = screenshot_comparator.process_upload(path)
+    #     print(result)
         
-        if result == "Changes detected" or result == "No previous screenshot to compare":
-            signed_url = file_manager.upload_file(path)
-            summary = vision_llm.vision(signed_url)
-            print(summary)
-            metadata = { "file_url": signed_url }
-            document = file_manager.get_docs(summary, metadata)
-            vectorstore.add(document)
+    #     if result == "Changes detected" or result == "No previous screenshot to compare":
+    #         signed_url = file_manager.upload_file(path)
+    #         summary = vision_llm.vision(signed_url)
+    #         print(summary)
+    #         metadata = { "file_url": signed_url }
+    #         document = file_manager.get_docs(summary, metadata)
+    #         vectorstore.add(document)
             
-        ss_taken += 1
+    #     ss_taken += 1
+    query = input("\nHuman: ")
+    while True and query != "q":
+        docs = vectorstore.query(query)
+        docs = file_manager.format_docs(docs)
+        chat_llm.chat(query, docs)
+        query = input("\nHuman: ")

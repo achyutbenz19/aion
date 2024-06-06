@@ -49,5 +49,12 @@ class FileManager:
             return None        
     
     def get_docs(self, text, metadata):
-        docs = [Document(page_content=text, metadata=metadata)] 
+        docs = [Document(page_content=text, metadata=metadata)]
         return docs
+    
+    def format_docs(self, docs):
+        formatted_docs = []
+        for doc in docs:
+            doc_string = f"Content: {doc.page_content}, Metadata: {doc.metadata}"
+            formatted_docs.append(doc_string)
+        return "\n".join(formatted_docs)
