@@ -6,7 +6,7 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai.chat_models import ChatOpenAI
 
-class LanguageModelProcessor:
+class ChatLLM:
     def __init__(self):
         self.llm = ChatGroq(temperature=0.5, model_name="mixtral-8x7b-32768", groq_api_key=os.environ.get("GROQ_API_KEY"))
         self.store = {}

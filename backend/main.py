@@ -1,9 +1,11 @@
 from time import sleep
+from utils.chat_llm import ChatLLM
 from utils.file_manager import FileManager
 from utils.screenshot_comparator import ScreenshotComparator
 from utils.vectorstore import Vectorstore
 from utils.vision_llm import VisionLLM
 
+chat_llm = ChatLLM()
 file_manager = FileManager()
 screenshot_comparator = ScreenshotComparator("./backend/archive")
 vectorstore = Vectorstore()
