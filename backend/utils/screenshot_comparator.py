@@ -1,8 +1,8 @@
 import os
 import time
 import cv2
-import pyautogui
 import numpy as np
+from PIL import ImageGrab
 from config.index import ALLOWED_EXTENSIONS
 
 class ScreenshotComparator:
@@ -47,7 +47,7 @@ class ScreenshotComparator:
         if filename is None:
             filename = f'screenshot_{int(time.time())}.png'
         save_path = os.path.join(self.archive_folder, filename)
-        screenshot = pyautogui.screenshot()
+        screenshot = ImageGrab.grab()
         screenshot.save(save_path)
         return save_path
 

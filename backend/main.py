@@ -50,6 +50,10 @@ def start():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/")
+def root():
+    return {"aion": "live"}
+
 @app.post("/chat")
 def chat(query: BaseModel):
     try:
