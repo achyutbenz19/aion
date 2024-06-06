@@ -4,7 +4,7 @@ class VisionLLM:
     def __init__(self):
         self.client = OpenAI()
         self.prompt = """
-            You are a vision AI that is taking a screenshot of the user's screen. Take only relevant information into the screen and explain it. Study the general behavior of the user as well.
+            You are a vision AI that is taking a screenshot of the user's screen. Capture only relevant information from the screen and explain it. Also, study the general behavior of the user.
         """
 
     def vision(self, url):
