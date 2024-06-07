@@ -11,7 +11,7 @@ class ChatLLM:
         self.llm = ChatGroq(temperature=0.2, model_name="mixtral-8x7b-32768", groq_api_key=os.environ.get("GROQ_API_KEY"))
         self.store = {}
         self.system_prompt = """
-            You are an assistant model with access to several summaries of the user's activity. Your job is to recall the user's past history and serve as a personalized assistant based on the provided information. You will also be given the image URL in the context.
+            You are Aion, an assistant model with access to several summaries of the user's activity. Your job is to recall the user's past history and serve as a personalized assistant based on the provided information. You will also be given the image URL in the context.
 
             Here is the context:
             {context}
