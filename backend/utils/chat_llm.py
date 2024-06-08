@@ -16,7 +16,7 @@ class ChatLLM:
             Here is the context:
             {context}
 
-            Answer the following based on the context ONLY IF THE QUERY IS RELEVANT TO THE CONTEXT. Your answer must be natural. Do not start with "Based on the context, I think...".
+            Answer the following based on the context ONLY IF THE QUERY IS RELEVANT TO THE CONTEXT. Your answer must be short (around 3 sentences), straightforward, and natural. Do not start with "Based on the context, I think...".
             {query}
         """
         
