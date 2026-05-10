@@ -15,8 +15,10 @@ inputs:
   hmac_secret:
     description: |
       HMAC-SHA256 secret shared with the dispatcher. Store as a repo
-      secret (Settings → Secrets and variables → Actions) and reference
-      via `${{ secrets.PREFLIGHT_HMAC_SECRET }}`.
+      secret named PREFLIGHT_HMAC_SECRET (Settings → Secrets and
+      variables → Actions) and reference it via the secrets context
+      from your workflow file (composite actions cannot read secrets
+      directly, so the workflow has to forward the value).
     required: true
   workflow:
     description: |
