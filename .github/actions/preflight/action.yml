@@ -1,0 +1,131 @@
+name: 'Preflight'
+description: 'Trigger a Preflight QA run against the current PR / commit.'
+author: 'YouLearn'
+branding:
+  icon: 'check-circle'
+  color: 'purple'
+
+inputs:
+  dispatcher_url:
+    description: |
+      HTTPS URL of the Preflight dispatcher /dispatch endpoint.
+      Default: https://preflight.youlearn.ai/dispatch.
+    required: false
+    default: 'https://preflight.youlearn.ai/dispatch'
+  hmac_secret:
+    description: |
+      HMAC-SHA256 secret shared with the dispatcher. Store as a repo
+      secret (Settings → Secrets and variables → Actions) and reference
+      via `${{ secrets.PREFLIGHT_HMAC_SECRET }}`.
+    required: true
+  workflow:
+    description: |
+      Optional workflow id to run. Omit to use the tenant's default
+      (configured server-side). E.g. "voiceos/jonah-customer-video".
+    required: false
+    default: ''
+  force:
+    description: |
+      "true" to bypass any auto-trigger heuristic the dispatcher applies
+      (e.g. "skip on docs-only PRs"). Useful for `workflow_dispatch`
+      manual triggers where the user explicitly wants a run.
+    required: false
+    default: 'false'
+
+outputs:
+  run_id:
+    description: 'Preflight run id assigned by the dispatcher (UUID).'
+    value: ${{ steps.dispatch.outputs.run_id }}
+  status_url:
+    description: 'URL where the run progress + final report can be tracked.'
+    value: ${{ steps.dispatch.outputs.status_url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Dispatch to Preflight
+      id: dispatch
+      shell: bash
+      env:
+        PF_DISPATCHER_URL: ${{ inputs.dispatcher_url }}
+        PF_HMAC_SECRET: ${{ inputs.hmac_secret }}
+        PF_WORKFLOW: ${{ inputs.workflow }}
+        PF_FORCE: ${{ inputs.force }}
+        GH_REPO: ${{ github.repository }}
+        GH_ACTOR: ${{ github.actor }}
+        GH_EVENT: ${{ github.event_name }}
+        GH_REF: ${{ github.ref }}
+        GH_SHA: ${{ github.sha }}
+        GH_PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
+        GH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        GH_PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+      run: |
+        set -euo pipefail
+
+        if [[ -z "${PF_HMAC_SECRET}" ]]; then
+          echo "::error::hmac_secret input is required."
+          exit 1
+        fi
+
+        # Build a stable JSON payload. Field order is locked so the
+        # HMAC signature is reproducible across re-runs of this Action.
+        payload=$(jq -cn \
+          --arg repo        "${GH_REPO}" \
+          --arg actor       "${GH_ACTOR}" \
+          --arg event       "${GH_EVENT}" \
+          --arg ref         "${GH_REF}" \
+          --arg sha         "${GH_SHA}" \
+          --arg pr_number   "${GH_PR_NUMBER}" \
+          --arg head_sha    "${GH_PR_HEAD_SHA}" \
+          --arg base_ref    "${GH_PR_BASE_REF}" \
+          --arg workflow    "${PF_WORKFLOW}" \
+          --arg force       "${PF_FORCE}" \
+          '{
+            repo: $repo,
+            actor: $actor,
+            event: $event,
+            ref: $ref,
+            sha: $sha,
+            pr_number: $pr_number,
+            head_sha: $head_sha,
+            base_ref: $base_ref,
+            workflow: ($workflow | select(length > 0)),
+            force: ($force == "true")
+          } | with_entries(select(.value != null))')
+
+        # HMAC-SHA256 over the raw payload bytes. Header format matches
+        # GitHub's `X-Hub-Signature-256` convention so the dispatcher
+        # reuses one verifier for both webhook + dispatch entrypoints.
+        sig=$(printf '%s' "${payload}" \
+          | openssl dgst -sha256 -hmac "${PF_HMAC_SECRET}" -binary \
+          | xxd -p -c 256)
+
+        # POST. Capture HTTP status + body separately so we can fail
+        # the action on non-2xx with a useful message.
+        tmp=$(mktemp)
+        http_code=$(curl -sS -o "${tmp}" -w '%{http_code}' \
+          -X POST "${PF_DISPATCHER_URL}" \
+          -H "Content-Type: application/json" \
+          -H "X-Preflight-Signature-256: sha256=${sig}" \
+          -H "X-Preflight-Event: dispatch" \
+          --data "${payload}")
+        body=$(cat "${tmp}")
+        rm -f "${tmp}"
+
+        echo "Dispatcher response (${http_code}):"
+        echo "${body}"
+
+        if [[ "${http_code}" != "200" && "${http_code}" != "202" ]]; then
+          echo "::error::Dispatcher rejected the dispatch (HTTP ${http_code})."
+          exit 1
+        fi
+
+        run_id=$(echo "${body}" | jq -r '.run_id // ""')
+        status_url=$(echo "${body}" | jq -r '.status_url // ""')
+        if [[ -n "${run_id}" ]]; then
+          echo "run_id=${run_id}" >> "${GITHUB_OUTPUT}"
+        fi
+        if [[ -n "${status_url}" ]]; then
+          echo "status_url=${status_url}" >> "${GITHUB_OUTPUT}"
+          echo "[Preflight run](${status_url})" >> "${GITHUB_STEP_SUMMARY}"
+        fi

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: youlearn-ai/preflight-action@v1
+      - uses: ./.github/actions/preflight
         with:
           dispatcher_url: 'https://retailers-sleep-diamond-corresponding.trycloudflare.com/dispatch'
           hmac_secret: ${{ secrets.PREFLIGHT_HMAC_SECRET }}
